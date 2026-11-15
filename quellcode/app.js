@@ -141,7 +141,9 @@ function route(){
   const h = (location.hash || "").replace("#","");
   const ch = CHAPTERS.find(c => c.id === h);
   window.scrollTo(0,0);
-  if(ch) renderChapter(ch); else renderHome();
+  if(examTimer){ clearInterval(examTimer); examTimer = null; }
+  if(h === "abschlusstest") renderExam();
+  else if(ch) renderChapter(ch); else renderHome();
 }
 window.addEventListener("hashchange", route);
 
@@ -171,6 +173,9 @@ function renderHome(){
       <div class="chmeta"><span class="stars">${starsHtml(p.stars||0)}</span><span class="exc">${exDone}/${exAll} Übungen</span></div></div>`);
     g.appendChild(a);
   });
+  const ex = examState(); const last = ex && ex.result;
+  const card = el("a", { class:"examcard", href:"#abschlusstest" }, `<div class="chemoji">🎓</div><div class="chtxt"><b>Großer Abschlusstest</b><span>Alle Kapitel · ${FINAL_EXAM.minutes} Minuten · mit Note</span>${last?`<div class="chmeta"><span class="exc">Letztes Ergebnis: ${esc(last.name)} – Note ${last.grade} (${last.points}/${last.max} Punkte)</span></div>`:(ex&&ex.start&&!ex.done?`<div class="chmeta"><span class="exc">⏳ Test läuft gerade</span></div>`:"")}</div>`);
+  g.appendChild(card);
   $("#reset").onclick = () => { const b = $("#reset"); if(b.dataset.sure){ P = {}; save(); renderHome(); } else { b.dataset.sure = "1"; b.textContent = "Wirklich alles löschen? Nochmal tippen."; } };
 }
 
@@ -609,6 +614,334 @@ function renderTest(ch, c){
     };
     next();
   };
+}
+
+// ================= GROSSER ABSCHLUSSTEST =================
+const EXAM_KEY = "gewi5-abschlusstest-v1";
+var examTimer = null;
+const EXAM_TASKS = [];
+FINAL_EXAM.sections.forEach((sec, si) => sec.tasks.forEach((t, ti) => EXAM_TASKS.push(Object.assign({ sec: si, id: "s"+si+"t"+ti }, t))));
+const EXAM_MAX = EXAM_TASKS.reduce((s,t)=>s+t.pts, 0);
+
+function examState(){ try { return JSON.parse(localStorage.getItem(EXAM_KEY) || "null"); } catch(e) { return window.__examMem || null; } }
+function examSave(S){ window.__examMem = S; try { localStorage.setItem(EXAM_KEY, JSON.stringify(S)); } catch(e) {} }
+function examLoad(){ const s = examState(); return s || window.__examMem || null; }
+
+function gradeFor(points, max){
+  const pct = max ? points / max * 100 : 0;
+  for(const [min, g, word] of FINAL_EXAM.grades) if(pct >= min - 1e-9) return { grade:g, word, pct };
+  return { grade:6, word:"ungenügend", pct };
+}
+function pointsTable(){
+  const g = FINAL_EXAM.grades;
+  return g.map(([min, n, w], i) => {
+    const lo = Math.ceil(EXAM_MAX * min / 100 - 1e-9);
+    const hi = i === 0 ? EXAM_MAX : Math.ceil(EXAM_MAX * g[i-1][0] / 100 - 1e-9) - 1;
+    return `<tr><td><b>${n}</b> – ${w}</td><td>${i===0?"ab ":""}${min} %${i===0?"":` – ${g[i-1][0]-1} %`}</td><td>${lo}–${hi}</td></tr>`;
+  }).join("");
+}
+
+// ---------- Bewertung ----------
+function scoreTask(t, v){
+  if(v == null) return 0;
+  if(t.t === "mc") return v === t.a ? t.pts : 0;
+  if(t.t === "open"){
+    const ans = norm(v); if(!ans) return 0;
+    if(t.min){
+      const pool = t.pool || t.keys[0]; const hits = new Set();
+      pool.forEach(a => { if(findAlt(ans, a) >= 0) hits.add(norm(a)); });
+      return Math.floor(Math.min(hits.size, t.min) * t.pts / t.min);
+    }
+    let m = 0; t.keys.forEach(g => { if(g.some(a => findAlt(ans, a) >= 0)) m++; });
+    return Math.floor(m * t.pts / t.keys.length + 1e-9);
+  }
+  if(t.t === "sort"){ let c = 0; t.items.forEach(([txt, k], i) => { if(v[i] === k) c++; }); return Math.floor(c * t.pts / t.items.length + 1e-9); }
+  if(t.t === "order"){ let c = 0; t.items.forEach((x, i) => { if(v[i] === x) c++; }); return Math.floor(c * t.pts / t.items.length + 1e-9); }
+  if(t.t === "maptap"){ const w = whatIsAt(v); return (w.kind === t.target.kind && w.id === t.target.id) ? t.pts : 0; }
+  if(t.t === "maplabel"){ let c = 0; t.items.forEach((it, i) => { if(checkOpen({ keys:[it[2]] }, v[i] || "")) c++; }); return Math.floor(c * t.pts / t.items.length + 1e-9); }
+  if(t.t === "grid") return (v[0] === t.target[0] && v[1] === t.target[1]) ? t.pts : 0;
+  return 0;
+}
+function answerText(t, v){
+  if(v == null) return "<i>keine Antwort</i>";
+  if(t.t === "mc") return esc(t.opts[v]);
+  if(t.t === "open") return esc(v);
+  if(t.t === "sort") return t.items.map(([x], i) => `${esc(x)} → ${esc((t.cats.find(c=>c[0]===v[i])||["","?"])[1])}`).join("<br>");
+  if(t.t === "order") return v.map(esc).join(" → ");
+  if(t.t === "maptap"){ const w = whatIsAt(v); return w.kind==="cont" ? CONT_NAMES[w.id] : w.kind==="lake" ? "ein Binnenmeer" : OCEAN_NAMES[w.id]; }
+  if(t.t === "maplabel") return t.items.map((it, i) => `${i+1}: ${esc(v[i] || "–")}`).join("<br>");
+  if(t.t === "grid") return `Kästchen in Spalte ${v[0]+1}, Zeile ${v[1]+1}`;
+  return "";
+}
+function solutionText(t){
+  if(t.t === "mc") return esc(t.opts[t.a]);
+  if(t.t === "open" || t.t === "maptap") return esc(t.muster);
+  if(t.t === "sort") return t.items.map(([x, k]) => `${esc(x)} → ${esc(t.cats.find(c=>c[0]===k)[1])}`).join("<br>");
+  if(t.t === "order") return t.items.map(esc).join(" → ");
+  if(t.t === "maplabel") return t.items.map((it, i) => `${i+1}: ${esc(it[0])}`).join("<br>");
+  if(t.t === "grid") return `Spalte ${t.target[0]+1}, Zeile ${t.target[1]+1}`;
+  return "";
+}
+
+// ---------- Ablauf ----------
+function renderExam(){
+  const S = examLoad();
+  if(S && S.done) return renderExamResult(S);
+  if(S && S.start) return renderExamRun(S);
+  renderExamIntro();
+}
+function renderExamIntro(){
+  app.innerHTML = `
+  <div class="chhead exam-head" style="--c:#25232b"><a class="back" href="#">← Übersicht</a>
+    <div class="chtitle"><span class="chemoji">🎓</span><div><small>Alle Kapitel</small><h1>Großer Abschlusstest</h1></div></div></div>
+  <main class="content" style="--c:#2f7fb8">
+    <div class="examintro">
+      <p>In diesem Test zeigst du, was du in allen acht Kapiteln gelernt hast. Er funktioniert wie eine richtige Klassenarbeit.</p>
+      <ul class="rules">
+        <li>⏱️ Du hast <b>${FINAL_EXAM.minutes} Minuten</b> Zeit. Danach wird der Test automatisch abgegeben.</li>
+        <li>📝 <b>${EXAM_TASKS.length} Aufgaben</b> mit insgesamt <b>${EXAM_MAX} Punkten</b> – viele davon beantwortest du mit eigenen Worten.</li>
+        <li>🔒 Jede Antwort musst du <b>bestätigen</b>. Eine bestätigte Antwort kann <b>nicht mehr geändert</b> werden. Überlege also gut!</li>
+        <li>↔️ Du darfst Aufgaben überspringen und später wiederkommen. Nicht bestätigte Antworten zählen nicht.</li>
+        <li>🏅 Am Ende bekommst du deine Punkte und die Note, die es dafür in der Schule gäbe.</li>
+      </ul>
+      <details class="key"><summary>Notenschlüssel ansehen</summary><table class="tbl"><tr><th>Note</th><th>Prozent</th><th>Punkte</th></tr>${pointsTable()}</table></details>
+      <label class="namefield"><span>Dein Name</span><input id="exName" type="text" autocomplete="off" autocapitalize="words" maxlength="40" placeholder="Vor- und Nachname"></label>
+      <div class="fb bad hidden" id="nameErr">Bitte trage zuerst deinen Namen ein.</div>
+      <button class="btn" id="exStart">Test starten</button>
+    </div>
+  </main>`;
+  $("#exStart").onclick = () => {
+    const name = $("#exName").value.trim();
+    if(name.length < 2){ $("#nameErr").classList.remove("hidden"); $("#exName").focus(); return; }
+    const S = { name, start: Date.now(), answers:{}, cur:0, done:false };
+    examSave(S); renderExamRun(S);
+  };
+}
+function timeLeft(S){ return Math.max(0, S.start + FINAL_EXAM.minutes*60000 - Date.now()); }
+function fmt(ms){ const s = Math.ceil(ms/1000); return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; }
+
+function renderExamRun(S){
+  if(timeLeft(S) <= 0) return finishExam(S, true);
+  app.innerHTML = `
+  <div class="chhead exam-head" style="--c:#25232b">
+    <div class="exbar"><span class="exname">👤 ${esc(S.name)}</span><span class="extimer" id="exTimer">⏱️ ${fmt(timeLeft(S))}</span></div>
+    <div class="exnav" id="exNav"></div>
+  </div>
+  <main class="content" style="--c:#2f7fb8" id="exMain"></main>`;
+  if(examTimer) clearInterval(examTimer);
+  examTimer = setInterval(() => {
+    const t = $("#exTimer"); if(!t){ clearInterval(examTimer); examTimer = null; return; }
+    const left = timeLeft(S); t.textContent = "⏱️ " + fmt(left); t.classList.toggle("warn", left < 5*60000);
+    if(left <= 0){ clearInterval(examTimer); examTimer = null; finishExam(S, true); }
+  }, 1000);
+  showExamTask(S, S.cur || 0);
+}
+function renderExamNav(S, cur){
+  const nav = $("#exNav"); nav.innerHTML = "";
+  EXAM_TASKS.forEach((t, i) => {
+    const b = el("button", { class:"exdot" + (S.answers[t.id] ? " done" : "") + (i===cur ? " cur" : ""), "aria-label":"Aufgabe "+(i+1) }, String(i+1));
+    b.onclick = () => showExamTask(S, i);
+    nav.appendChild(b);
+  });
+  const sub = el("button", { class:"exdot submit" }, "Abgeben");
+  sub.onclick = () => showSubmit(S);
+  nav.appendChild(sub);
+  const c = nav.querySelector(".cur"); if(c) c.scrollIntoView({ inline:"center", block:"nearest" });
+}
+function showExamTask(S, i){
+  S.cur = i; examSave(S);
+  renderExamNav(S, i);
+  const t = EXAM_TASKS[i], sec = FINAL_EXAM.sections[t.sec];
+  const main = $("#exMain"); main.innerHTML = "";
+  window.scrollTo(0,0);
+  const locked = !!S.answers[t.id];
+  const box = el("div", { class:"q extask" + (locked ? " locked" : "") });
+  box.appendChild(el("div", { class:"exsec" }, `${sec.emoji} ${esc(sec.title)} · Aufgabe ${i+1} von ${EXAM_TASKS.length} · <b>${t.pts} ${t.pts===1?"Punkt":"Punkte"}</b>`));
+  box.appendChild(el("div", { class:"qtext" }, esc(t.q)));
+  const w = examWidget(t, locked ? S.answers[t.id].v : undefined, locked);
+  box.appendChild(w.node);
+  const msg = el("div", { class:"fb hidden" });
+  box.appendChild(msg);
+  const row = el("div", { class:"row exrow" });
+  if(locked){
+    box.appendChild(el("div", { class:"lockinfo" }, "🔒 Antwort bestätigt – sie kann nicht mehr geändert werden."));
+  } else {
+    const conf = el("button", { class:"btn" }, "✔ Antwort bestätigen");
+    conf.onclick = () => {
+      const v = w.value();
+      if(v == null){ msg.className = "fb bad"; msg.textContent = w.emptyMsg || "Du hast noch nichts beantwortet."; return; }
+      S.answers[t.id] = { v, at: Date.now() }; examSave(S);
+      const nextOpen = EXAM_TASKS.findIndex((x, k) => k > i && !S.answers[x.id]);
+      const anyOpen = EXAM_TASKS.findIndex(x => !S.answers[x.id]);
+      if(nextOpen >= 0) showExamTask(S, nextOpen); else if(anyOpen >= 0) showExamTask(S, anyOpen); else showSubmit(S);
+    };
+    row.appendChild(conf);
+  }
+  const prev = el("button", { class:"btn ghost" }, "← Zurück"); prev.disabled = i === 0; prev.onclick = () => showExamTask(S, i-1);
+  const next = el("button", { class:"btn ghost" }, i < EXAM_TASKS.length-1 ? (locked ? "Weiter →" : "Überspringen →") : "Zur Abgabe →");
+  next.onclick = () => i < EXAM_TASKS.length-1 ? showExamTask(S, i+1) : showSubmit(S);
+  row.append(prev, next);
+  box.appendChild(row);
+  main.appendChild(box);
+}
+function showSubmit(S){
+  renderExamNav(S, -1);
+  const open = EXAM_TASKS.filter(t => !S.answers[t.id]).length;
+  const main = $("#exMain");
+  main.innerHTML = `<div class="q extask"><div class="qtext">Test abgeben?</div>
+    <p>${open === 0 ? "Du hast alle Aufgaben beantwortet. 👍" : `Noch <b>${open}</b> Aufgabe${open===1?" ist":"n sind"} nicht bestätigt. Diese zählen dann <b>0 Punkte</b>.`}</p>
+    <p>Nach dem Abgeben kannst du nichts mehr ändern.</p></div>`;
+  const row = el("div", { class:"row" });
+  if(open){ const back = el("button", { class:"btn ghost" }, "Zurück zu offenen Aufgaben"); back.onclick = () => showExamTask(S, EXAM_TASKS.findIndex(t => !S.answers[t.id])); row.appendChild(back); }
+  const sub = el("button", { class:"btn" }, "Endgültig abgeben"); sub.onclick = () => finishExam(S, false);
+  row.appendChild(sub); main.querySelector(".extask").appendChild(row);
+}
+function finishExam(S, timeout){
+  if(examTimer){ clearInterval(examTimer); examTimer = null; }
+  S.done = true; S.end = Math.min(Date.now(), S.start + FINAL_EXAM.minutes*60000); S.timeout = timeout;
+  S.scores = {}; EXAM_TASKS.forEach(t => { S.scores[t.id] = S.answers[t.id] ? scoreTask(t, S.answers[t.id].v) : 0; });
+  S.adjust = {};
+  examResult(S); examSave(S);
+  renderExamResult(S);
+}
+function examResult(S){
+  const pts = EXAM_TASKS.reduce((s, t) => s + Math.max(0, Math.min(t.pts, (S.scores[t.id]||0) + ((S.adjust||{})[t.id]||0))), 0);
+  const g = gradeFor(pts, EXAM_MAX);
+  S.result = { name:S.name, points:pts, max:EXAM_MAX, grade:g.grade, word:g.word, pct:Math.round(g.pct) };
+  return S.result;
+}
+function renderExamResult(S){
+  const r = examResult(S);
+  const mins = Math.max(1, Math.round((S.end - S.start)/60000));
+  const d = new Date(S.start);
+  const secRows = FINAL_EXAM.sections.map((sec, si) => {
+    const ts = EXAM_TASKS.filter(t => t.sec === si);
+    const got = ts.reduce((s,t)=>s+Math.max(0,Math.min(t.pts,(S.scores[t.id]||0)+((S.adjust||{})[t.id]||0))),0), max = ts.reduce((s,t)=>s+t.pts,0);
+    return `<tr><td>${sec.emoji} ${esc(sec.title)}</td><td>${got} / ${max}</td><td><div class="minibar"><i style="width:${Math.round(got/max*100)}%"></i></div></td></tr>`;
+  }).join("");
+  app.innerHTML = `
+  <div class="chhead exam-head" style="--c:#25232b"><a class="back" href="#">← Übersicht</a>
+    <div class="chtitle"><span class="chemoji">🎓</span><div><small>Ergebnis</small><h1>Großer Abschlusstest</h1></div></div></div>
+  <main class="content" style="--c:#2f7fb8">
+    <div class="examresult">
+      <div class="resname">${esc(S.name)}</div>
+      <div class="resdate">${d.toLocaleDateString("de-DE")} · Bearbeitungszeit: ${mins} Min.${S.timeout?" · Zeit abgelaufen":""}</div>
+      <div class="gradebig g${r.grade}"><span>${r.grade}</span><small>${r.word}</small></div>
+      <div class="respts"><b>${r.points}</b> von ${r.max} Punkten (${r.pct} %)</div>
+    </div>
+    <h3>Punkte nach Themen</h3>
+    <table class="tbl">${secRows}</table>
+    <details class="key"><summary>Notenschlüssel</summary><table class="tbl"><tr><th>Note</th><th>Prozent</th><th>Punkte</th></tr>${pointsTable()}</table></details>
+    <h3>Alle Aufgaben mit Lösungen</h3>
+    <label class="adjtoggle"><input type="checkbox" id="adjOn"> Korrektur durch Lehrkraft oder Eltern: Punkte bei offenen Antworten anpassen</label>
+    <div id="review"></div>
+    <div class="row" style="margin-top:16px"><button class="btn ghost" id="exNew">Neuen Versuch starten</button><a class="btn" href="#">Zur Übersicht</a></div>
+  </main>`;
+  const rev = $("#review");
+  const drawReview = () => {
+    const adj = $("#adjOn").checked;
+    rev.innerHTML = "";
+    EXAM_TASKS.forEach((t, i) => {
+      const base = S.scores[t.id] || 0, delta = (S.adjust||{})[t.id] || 0, got = Math.max(0, Math.min(t.pts, base + delta));
+      const cls = got === t.pts ? "ok" : got > 0 ? "part" : "bad";
+      const it = el("div", { class:"revitem " + cls }, `<div class="revh"><span>Aufgabe ${i+1}</span><b>${got} / ${t.pts} P.</b></div>
+        <div class="revq">${esc(t.q)}</div>
+        <div class="reva"><small>Deine Antwort:</small>${answerText(t, S.answers[t.id] ? S.answers[t.id].v : null)}</div>
+        <div class="revs"><small>Lösung:</small>${solutionText(t)}</div>`);
+      if(adj && S.answers[t.id]){
+        const r2 = el("div", { class:"adjrow" });
+        const minus = el("button", { class:"btn small ghost" }, "− 1 Punkt"), plus = el("button", { class:"btn small ghost" }, "+ 1 Punkt");
+        minus.disabled = got <= 0; plus.disabled = got >= t.pts;
+        minus.onclick = () => { S.adjust[t.id] = delta - 1; examResult(S); examSave(S); renderExamResultKeep(S); };
+        plus.onclick = () => { S.adjust[t.id] = delta + 1; examResult(S); examSave(S); renderExamResultKeep(S); };
+        r2.append(minus, plus); if(delta) r2.appendChild(el("span", { class:"small" }, ` (korrigiert: ${delta>0?"+":""}${delta})`));
+        it.appendChild(r2);
+      }
+      rev.appendChild(it);
+    });
+  };
+  $("#adjOn").checked = !!S.adjOpen;
+  $("#adjOn").onchange = () => { S.adjOpen = $("#adjOn").checked; examSave(S); drawReview(); };
+  drawReview();
+  $("#exNew").onclick = () => { const b = $("#exNew"); if(b.dataset.sure){ examSave(null); try{ localStorage.removeItem(EXAM_KEY); }catch(e){} window.__examMem = null; renderExamIntro(); } else { b.dataset.sure = "1"; b.textContent = "Ergebnis wird gelöscht – nochmal tippen"; } };
+}
+function renderExamResultKeep(S){ const y = window.scrollY; renderExamResult(S); window.scrollTo(0, y); }
+
+// ---------- Aufgaben-Bausteine ----------
+function examWidget(t, val, locked){
+  const node = el("div", { class:"exw" });
+  if(t.t === "mc"){
+    let sel = val; const order = locked ? t.opts.map((o,i)=>i) : shuffle(t.opts.map((o,i)=>i));
+    const box = el("div", { class:"opts" });
+    order.forEach(i => { const b = el("button", { class:"opt" + (sel===i?" chosen":"") }, esc(t.opts[i])); b.disabled = locked;
+      b.onclick = () => { sel = i; box.querySelectorAll(".opt").forEach(x=>x.classList.remove("chosen")); b.classList.add("chosen"); }; box.appendChild(b); });
+    node.appendChild(box);
+    return { node, value: () => sel == null ? null : sel, emptyMsg:"Wähle zuerst eine Antwort aus." };
+  }
+  if(t.t === "open"){
+    const ta = el("textarea", { rows:"3", class:"ans", placeholder:"Deine Antwort …" }); ta.value = val || ""; ta.readOnly = locked;
+    node.appendChild(ta);
+    return { node, value: () => ta.value.trim() ? ta.value.trim() : null, emptyMsg:"Schreibe zuerst eine Antwort." };
+  }
+  if(t.t === "sort"){
+    const v = val ? val.slice() : t.items.map(() => null);
+    t.items.forEach(([txt], i) => {
+      const r = el("div", { class:"sortrow" }, `<div class="sortitem">${esc(txt)}</div>`);
+      const seg = el("div", { class:"seg" });
+      t.cats.forEach(([k, label]) => { const b = el("button", { class:"segb" + (v[i]===k?" on":"") }, esc(label)); b.disabled = locked;
+        b.onclick = () => { v[i] = k; seg.querySelectorAll(".segb").forEach(x=>x.classList.remove("on")); b.classList.add("on"); }; seg.appendChild(b); });
+      r.appendChild(seg); node.appendChild(r);
+    });
+    return { node, value: () => v.every(x => x) ? v.slice() : null, emptyMsg:"Ordne zuerst jedes Feld zu." };
+  }
+  if(t.t === "order"){
+    let v = val ? val.slice() : [];
+    const list = el("ol", { class:"olist" }); const pool = el("div", { class:"chips" });
+    const reset = el("button", { class:"btn small ghost" }, "↺ Neu ordnen");
+    const draw = () => {
+      list.innerHTML = v.map(x => `<li>${esc(x)}</li>`).join("") || `<li class="ph">Tippe die Begriffe unten in der richtigen Reihenfolge an.</li>`;
+      pool.innerHTML = "";
+      if(!locked) shuffledItems.filter(x => !v.includes(x)).forEach(x => { const c = el("button", { class:"chip" }, esc(x)); c.onclick = () => { v.push(x); draw(); }; pool.appendChild(c); });
+    };
+    const shuffledItems = shuffle(t.items);
+    reset.onclick = () => { v = []; draw(); };
+    node.append(list, pool); if(!locked) node.appendChild(reset);
+    draw();
+    return { node, value: () => v.length === t.items.length ? v.slice() : null, emptyMsg:"Bringe zuerst alle Begriffe in eine Reihenfolge." };
+  }
+  if(t.t === "maptap"){
+    const host = el("div", { class:"map tap" }); node.appendChild(host);
+    let v = val || null;
+    setTimeout(() => {
+      const m = drawMap(host, t.view);
+      const mark = ll => { m.layer.selectAll(".m-pick").remove(); const p = m.proj(ll); if(p) m.layer.append("circle").attr("class","m-pick").attr("cx",p[0]).attr("cy",p[1]).attr("r", VIEWS[t.view].w/50); };
+      if(v) mark(v);
+      if(!locked) m.svg.on("click", evt => { const hit = mapClickLL(m, evt); if(!hit) return; v = hit.ll; mark(v); });
+    }, 0);
+    node.appendChild(el("p", { class:"small" }, locked ? "" : "Tippe auf die Karte. Du kannst deinen Punkt noch versetzen, bis du bestätigst."));
+    return { node, value: () => v, emptyMsg:"Tippe zuerst auf die Karte." };
+  }
+  if(t.t === "maplabel"){
+    const host = el("div", { class:"map" }); node.appendChild(host);
+    setTimeout(() => { const m = drawMap(host, t.view); t.items.forEach((it, i) => addNumber(m, it[1], i+1)); }, 0);
+    const form = el("div", { class:"lblform" });
+    const inputs = t.items.map((it, i) => { const r = el("label", { class:"lblrow" }, `<span class="lnum">${i+1}</span>`); const inp = el("input", { type:"text", autocomplete:"off", placeholder:"…" }); inp.value = val ? (val[i]||"") : ""; inp.readOnly = locked; r.appendChild(inp); form.appendChild(r); return inp; });
+    node.appendChild(form);
+    return { node, value: () => inputs.some(x => x.value.trim()) ? inputs.map(x => x.value.trim()) : null, emptyMsg:"Schreibe zuerst mindestens einen Namen." };
+  }
+  if(t.t === "grid"){
+    const N = t.n; let v = val || null;
+    const gw = el("div", { class:"gridwrap" }, `<div class="gN">N ↑</div>`);
+    const grid = el("div", { class:"grid8", style:`grid-template-columns:repeat(${N},1fr)` }); gw.appendChild(grid);
+    const cells = [];
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const c = el("button", { class:"cell" }); c.dataset.x = x; c.dataset.y = y; c.disabled = locked && false; grid.appendChild(c); cells.push(c); }
+    const st = cells[t.start[1]*N + t.start[0]]; st.classList.add("start"); st.textContent = "✖";
+    const draw = () => cells.forEach(c => { const on = v && +c.dataset.x===v[0] && +c.dataset.y===v[1]; c.classList.toggle("pick", on); if(c!==st) c.textContent = on ? "●" : ""; });
+    if(!locked) grid.onclick = e => { const c = e.target.closest(".cell"); if(!c || c === st) return; v = [+c.dataset.x, +c.dataset.y]; draw(); };
+    draw(); node.appendChild(gw);
+    return { node, value: () => v, emptyMsg:"Tippe zuerst ein Kästchen an." };
+  }
+  return { node, value: () => null };
 }
 
 route();

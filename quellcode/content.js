@@ -470,3 +470,68 @@ const MAP_LABEL_SETS = {
   oceanSouth: { intro:"Eine Weltkarte auf dem Kopf. Schreibe zu jeder Nummer den Namen des Meeres oder Kontinents.",
     items:[["Pazifik",[-140,0],["pazif","still"]],["Atlantik",[-30,-20],["atlant"]],["Indischer Ozean",[80,-25],["indisch"]],["Nordpolarmeer",[0,85],["nordpolar","arktis","arktisch","eismeer"]],["Afrika",[20,5],["afrika"]],["Südamerika",[-60,-12],["südamerika","suedamerika"]],["Australien",[134,-25],["australien"]]] }
 };
+
+// ================= GROSSER ABSCHLUSSTEST =================
+// pts = Punkte. Offene Fragen: Teilpunkte je gefundener Schlüsselgruppe (bzw. je Treffer bei "min").
+const FINAL_EXAM = {
+  minutes: 45,
+  grades: [[96,1,"sehr gut"],[80,2,"gut"],[60,3,"befriedigend"],[45,4,"ausreichend"],[16,5,"mangelhaft"],[0,6,"ungenügend"]],
+  sections: [
+  { title:"Gewi und seine Bereiche", emoji:"🧩", tasks:[
+    { t:"open", pts:1, q:"Schreibe die Abkürzung „Gewi“ aus.", keys:[["gesellschaftswissenschaft"]], muster:"Gesellschaftswissenschaften" },
+    { t:"open", pts:1, q:"Was lernt man im Fach Gewi? Antworte in einem Satz.", keys:[["zusammen","miteinander","gesellschaft"]], muster:"Wie Menschen zusammenleben – heute, früher und an verschiedenen Orten der Erde." },
+    { t:"open", pts:3, q:"Nenne die drei Bereiche von Gewi.", keys:[["geschicht"],["geograf","geograph","erdkunde"],["politi"]], muster:"Geschichte, Geografie, Politik (Politische Bildung)" },
+    { t:"sort", pts:3, q:"Ordne jedes Thema dem richtigen Bereich zu.", cats:[["ges","Geschichte"],["geo","Geografie"],["pol","Politik"]],
+      items:[["Neandertaler","ges"],["Weltmeere","geo"],["Klassensprecherwahl","pol"],["Alte Münzen","ges"],["Himmelsrichtungen","geo"],["Regeln im Verein","pol"]] },
+    { t:"mc", pts:1, q:"Welche Aussage über Gruppen stimmt?", opts:["In Gruppen kann jeder tun, was er will.","In Gruppen gelten Regeln.","In Gruppen gibt es nie Streit.","In Gruppen hat man keine Pflichten."], a:1 },
+    { t:"open", pts:1, q:"Max kommt immer zu spät zum Fußballtraining. Nenne eine mögliche Konsequenz.", keys:[["enttäusch","aufgestellt","bank","nicht spielen","ärger","trainer","strafe","sauer","wütend","nicht mitspielen","raus","runden","laufen"]], muster:"Er enttäuscht sein Team und wird zum Beispiel nicht aufgestellt." }
+  ]},
+  { title:"Quellen", emoji:"🏺", tasks:[
+    { t:"open", pts:1, q:"Was ist eine geschichtliche Quelle?", keys:[["vergangen","früher","alt","geschichte"]], muster:"Alles, was aus der Vergangenheit übrig geblieben ist und uns etwas über sie verrät." },
+    { t:"open", pts:3, q:"Nenne die drei Arten von geschichtlichen Quellen.", keys:[["überrest","ueberrest"],["bild","ton"],["schrift"]], muster:"Überreste, Bild- und Tonquellen, Schriftquellen" },
+    { t:"sort", pts:3, q:"Ordne jede Quelle der richtigen Quellenart zu.", cats:[["ue","Überreste"],["bt","Bild- und Tonquellen"],["sc","Schriftquellen"]],
+      items:[["Faustkeil","ue"],["Schallplatte","bt"],["Brief","sc"],["Münze","ue"],["Fotografie","bt"],["Zeitung","sc"]] },
+    { t:"open", pts:2, q:"Erkläre, was ein Fossil ist.", keys:[["versteinert","stein"],["lebewes","tier","pflanze","knochen","muschel","abdruck","dinosaur"]], muster:"Ein versteinerter Überrest eines Lebewesens, z. B. ein Knochen, eine Muschel oder ein Pflanzenabdruck." }
+  ]},
+  { title:"Himmelsrichtungen", emoji:"🧭", tasks:[
+    { t:"open", pts:1, q:"Wie lautet der Merksatz für die vier Haupthimmelsrichtungen?", keys:[["nie"],["ohne"],["seife"],["wasch"]], muster:"Nie Ohne Seife Waschen" },
+    { t:"open", pts:2, q:"Nenne die vier Nebenhimmelsrichtungen.", keys:[["nordost","=no"],["südost","suedost","=so"],["südwest","suedwest","=sw"],["nordwest","=nw"]], muster:"Nordosten, Südosten, Südwesten, Nordwesten" },
+    { t:"open", pts:1, q:"In welcher Himmelsrichtung geht die Sonne unter?", keys:[["=westen","=w","=west"]], muster:"Im Westen." },
+    { t:"grid", pts:2, q:"Starte beim Kästchen mit dem ✖. Gehe 3 Kästchen nach Osten, dann 2 Kästchen nach Süden und dann 1 Kästchen nach Südwesten. Tippe das Kästchen an, auf dem du landest.", n:6, start:[1,1], target:[3,4] },
+    { t:"open", pts:1, q:"In welcher Himmelsrichtung liegt Hamburg von Berlin aus?", keys:[["=nw","=nordwesten","=nordwest"]], muster:"Im Nordwesten (NW)." },
+    { t:"open", pts:1, q:"In welcher Himmelsrichtung liegt Warschau von Berlin aus?", keys:[["=o","=osten","=ost"]], muster:"Im Osten (O)." },
+    { t:"mc", pts:1, q:"Wohin zeigt die Nadel eines Kompasses?", opts:["Nach Osten","Nach Süden","Nach Norden","Nach Westen"], a:2 }
+  ]},
+  { title:"Kontinente", emoji:"🌍", tasks:[
+    { t:"open", pts:3, q:"Nenne alle sieben Kontinente.", keys:[["asien"]], min:7, pool:["asien","afrika","nordamerika","südamerika","antarktis","europa","australien"], muster:"Asien, Afrika, Nordamerika, Südamerika, Antarktis, Europa, Australien" },
+    { t:"maptap", pts:1, q:"Achtung, die Karte steht auf dem Kopf! Tippe auf Australien.", view:"southUp", target:{kind:"cont", id:"AU"}, muster:"Australien" },
+    { t:"maplabel", pts:4, q:"Wir schauen von oben auf den Nordpol. Schreibe zu jeder Nummer den richtigen Namen.", view:"polar",
+      items:[["Europa",[3,47],["europa"]],["Nordamerika",[-100,47],["nordamerika"]],["Grönland",[-42,71],["grönland","groenland"]],["Afrika",[20,8],["afrika"]]] },
+    { t:"open", pts:1, q:"Welcher ist der größte Kontinent?", keys:[["asien"]], muster:"Asien" },
+    { t:"open", pts:1, q:"Welches Gebirge bildet einen Teil der Grenze zwischen Europa und Asien?", keys:[["ural"]], muster:"Das Uralgebirge" }
+  ]},
+  { title:"Die drei Weltmeere", emoji:"🌊", tasks:[
+    { t:"open", pts:3, q:"Nenne die drei Weltmeere.", keys:[["pazif","still"],["atlant"],["indisch"]], muster:"Pazifik, Atlantik, Indischer Ozean" },
+    { t:"maptap", pts:1, q:"Diese Karte ist zur Seite gedreht. Tippe auf den Indischen Ozean.", view:"sideways", target:{kind:"ocean", id:"indik"}, muster:"Indischer Ozean" },
+    { t:"open", pts:1, q:"Welchen Ozean überquert man auf dem Weg von Europa nach Amerika?", keys:[["atlant"]], muster:"Den Atlantik" },
+    { t:"mc", pts:1, q:"Zu welchem Ozean gehört die Ostsee?", opts:["Pazifik","Atlantik","Indischer Ozean"], a:1 },
+    { t:"open", pts:1, q:"Das Kaspische Meer heißt zwar „Meer“. Was ist es eigentlich?", keys:[["=see","binnensee","größter see","groesster see"]], muster:"Ein See (der größte See der Erde)." },
+    { t:"mc", pts:1, q:"Wie viel der Erdoberfläche ist ungefähr mit Wasser bedeckt?", opts:["Ein Viertel","Die Hälfte","Zwei Drittel","Fast nichts"], a:2 }
+  ]},
+  { title:"Entwicklung der Erde", emoji:"🌋", tasks:[
+    { t:"order", pts:2, q:"Bringe die Zeitalter der Erdgeschichte in die richtige Reihenfolge (vom ältesten zum jüngsten).", items:["Erdfrühzeit","Erdaltertum","Erdmittelalter","Erdneuzeit"] },
+    { t:"sort", pts:4, q:"Ordne jedes Ereignis dem richtigen Zeitalter zu.", cats:[["e1","Erdfrühzeit"],["e2","Erdaltertum"],["e3","Erdmittelalter"],["e4","Erdneuzeit"]],
+      items:[["Erste Einzeller","e1"],["Sauerstoff durch Fotosynthese","e1"],["Erste Fische","e2"],["Steinkohlewälder","e2"],["Dinosaurier","e3"],["Asteroideneinschlag","e3"],["Mammuts","e4"],["Erste Menschen","e4"]] },
+    { t:"open", pts:1, q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","milliard"]], muster:"Rund 4,6 Milliarden Jahre" },
+    { t:"open", pts:1, q:"Warum sind die Dinosaurier ausgestorben?", keys:[["asteroid","meteor","komet","einschlag"]], muster:"Vor 66 Millionen Jahren schlug ein riesiger Asteroid ein." }
+  ]},
+  { title:"Entwicklung des Menschen", emoji:"🦴", tasks:[
+    { t:"order", pts:2, q:"Ordne vom ältesten zum jüngsten.", items:["Australopithecus","Homo erectus","Neandertaler","Homo sapiens"] },
+    { t:"open", pts:2, q:"Stammt der Mensch vom Affen ab? Begründe deine Antwort.", keys:[["nein","nicht"],["vorfahr","gemeinsam","verwandt"]], muster:"Nein. Menschen und Menschenaffen haben aber gemeinsame Vorfahren (die Dryopithecinen)." },
+    { t:"open", pts:1, q:"Was bedeutet „Homo erectus“?", keys:[["aufgericht","aufrecht"]], muster:"Der aufgerichtete Mensch" },
+    { t:"open", pts:2, q:"Nenne zwei Dinge, die der Neandertaler konnte oder benutzte.", keys:[["feuer","faustkeil","speer","fell","kleid","jag","höhle","bestatt","werkzeug","zelt"]], min:2, muster:"Zum Beispiel: Feuer machen, mit Speeren jagen, Faustkeile benutzen, Kleidung aus Fellen tragen." },
+    { t:"open", pts:1, q:"Was änderte sich in der Jungsteinzeit am Leben der Menschen?", keys:[["sesshaft","ackerbau","acker","viehzucht","häuser","dorf","dörfer","bauer","landwirtschaft","anbau"]], muster:"Sie wurden sesshaft: Ackerbau, Viehzucht, feste Häuser und Dörfer." },
+    { t:"mc", pts:1, q:"Auf welchem Kontinent entstanden die ersten Menschen?", opts:["Europa","Asien","Afrika","Australien"], a:2 }
+  ]}
+  ]
+};
