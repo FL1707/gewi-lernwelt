@@ -641,6 +641,7 @@ function pointsTable(){
   }).join("");
 }
 
+function gridTargets(t){ let [x, y] = t.start; return t.steps.map(([d, len]) => { x += GDIR[d][0]*len; y += GDIR[d][1]*len; return [x, y]; }); }
 // ---------- Bewertung ----------
 function scoreTask(t, v){
   if(v == null) return 0;
@@ -659,7 +660,8 @@ function scoreTask(t, v){
   if(t.t === "order"){ let c = 0; t.items.forEach((x, i) => { if(v[i] === x) c++; }); return Math.floor(c * t.pts / t.items.length + 1e-9); }
   if(t.t === "maptap"){ const w = whatIsAt(v); return (w.kind === t.target.kind && w.id === t.target.id) ? t.pts : 0; }
   if(t.t === "maplabel"){ let c = 0; t.items.forEach((it, i) => { if(checkOpen({ keys:[it[2]] }, v[i] || "")) c++; }); return Math.floor(c * t.pts / t.items.length + 1e-9); }
-  if(t.t === "grid") return (v[0] === t.target[0] && v[1] === t.target[1]) ? t.pts : 0;
+  if(t.t === "grid" && !Array.isArray(v[0])) return 0;
+  if(t.t === "grid"){ const tg = gridTargets(t); let c = 0; tg.forEach((p, i) => { if(v[i] && v[i][0] === p[0] && v[i][1] === p[1]) c++; }); return Math.floor(c * t.pts / tg.length + 1e-9); }
   return 0;
 }
 function answerText(t, v){
@@ -670,7 +672,8 @@ function answerText(t, v){
   if(t.t === "order") return v.map(esc).join(" → ");
   if(t.t === "maptap"){ const w = whatIsAt(v); return w.kind==="cont" ? CONT_NAMES[w.id] : w.kind==="lake" ? "ein Binnenmeer" : OCEAN_NAMES[w.id]; }
   if(t.t === "maplabel") return t.items.map((it, i) => `${i+1}: ${esc(v[i] || "–")}`).join("<br>");
-  if(t.t === "grid") return `Kästchen in Spalte ${v[0]+1}, Zeile ${v[1]+1}`;
+  if(t.t === "grid" && !Array.isArray(v[0])) return "(alte Version der Aufgabe)";
+  if(t.t === "grid") return v.map((p, i) => `${i+1}. Kreuz: Spalte ${p[0]+1}, Zeile ${p[1]+1}`).join("<br>");
   return "";
 }
 function solutionText(t){
@@ -679,7 +682,7 @@ function solutionText(t){
   if(t.t === "sort") return t.items.map(([x, k]) => `${esc(x)} → ${esc(t.cats.find(c=>c[0]===k)[1])}`).join("<br>");
   if(t.t === "order") return t.items.map(esc).join(" → ");
   if(t.t === "maplabel") return t.items.map((it, i) => `${i+1}: ${esc(it[0])}`).join("<br>");
-  if(t.t === "grid") return `Spalte ${t.target[0]+1}, Zeile ${t.target[1]+1}`;
+  if(t.t === "grid") return gridTargets(t).map((p, i) => `${i+1}. Kreuz: Spalte ${p[0]+1}, Zeile ${p[1]+1} (${t.steps[i][1]} nach ${DIR_NAMES[t.steps[i][0]]})`).join("<br>");
   return "";
 }
 
@@ -930,16 +933,30 @@ function examWidget(t, val, locked){
     return { node, value: () => inputs.some(x => x.value.trim()) ? inputs.map(x => x.value.trim()) : null, emptyMsg:"Schreibe zuerst mindestens einen Namen." };
   }
   if(t.t === "grid"){
-    const N = t.n; let v = val || null;
+    const N = t.n; let v = (val && Array.isArray(val[0])) ? val.map(p => p.slice()) : [];
+    const steps = el("ol", { class:"steps" });
+    t.steps.forEach(([d, len]) => steps.appendChild(el("li", {}, `Gehe ${len} Kästchen nach <b>${DIR_NAMES[d]}</b> und mache ein Kreuz.`)));
     const gw = el("div", { class:"gridwrap" }, `<div class="gN">N ↑</div>`);
     const grid = el("div", { class:"grid8", style:`grid-template-columns:repeat(${N},1fr)` }); gw.appendChild(grid);
     const cells = [];
-    for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const c = el("button", { class:"cell" }); c.dataset.x = x; c.dataset.y = y; c.disabled = locked && false; grid.appendChild(c); cells.push(c); }
-    const st = cells[t.start[1]*N + t.start[0]]; st.classList.add("start"); st.textContent = "✖";
-    const draw = () => cells.forEach(c => { const on = v && +c.dataset.x===v[0] && +c.dataset.y===v[1]; c.classList.toggle("pick", on); if(c!==st) c.textContent = on ? "●" : ""; });
-    if(!locked) grid.onclick = e => { const c = e.target.closest(".cell"); if(!c || c === st) return; v = [+c.dataset.x, +c.dataset.y]; draw(); };
-    draw(); node.appendChild(gw);
-    return { node, value: () => v, emptyMsg:"Tippe zuerst ein Kästchen an." };
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++){ const c = el("button", { class:"cell" }); c.dataset.x = x; c.dataset.y = y; grid.appendChild(c); cells.push(c); }
+    const st = cells[t.start[1]*N + t.start[0]];
+    const undo = el("button", { class:"btn small ghost" }, "↶ Letztes Kreuz löschen");
+    const draw = () => {
+      cells.forEach(c => { c.innerHTML = ""; c.classList.remove("pick"); });
+      st.classList.add("start"); st.innerHTML = "★";
+      v.forEach((p, i) => { const c = cells[p[1]*N + p[0]]; c.classList.add("pick"); c.innerHTML = `✖<sup>${i+1}</sup>`; });
+      steps.querySelectorAll("li").forEach((li, i) => { li.classList.toggle("ok", i < v.length); li.classList.toggle("now", !locked && i === v.length); });
+      undo.disabled = v.length === 0;
+    };
+    if(!locked){
+      grid.onclick = e => { const c = e.target.closest(".cell"); if(!c || v.length >= t.steps.length) return; v.push([+c.dataset.x, +c.dataset.y]); draw(); };
+      undo.onclick = () => { v.pop(); draw(); };
+    }
+    node.append(steps, gw); if(!locked) node.appendChild(undo);
+    node.appendChild(el("p", { class:"small" }, locked ? "" : "Tippe für jeden Schritt das Kästchen an, auf dem du landest. Die kleine Zahl zeigt, das wievielte Kreuz es ist."));
+    draw();
+    return { node, value: () => v.length === t.steps.length ? v.map(p => p.slice()) : null, emptyMsg:`Setze zuerst alle ${t.steps.length} Kreuze – eins für jeden Schritt.` };
   }
   return { node, value: () => null };
 }

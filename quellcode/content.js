@@ -497,7 +497,7 @@ const FINAL_EXAM = {
     { t:"open", pts:1, q:"Wie lautet der Merksatz für die vier Haupthimmelsrichtungen?", keys:[["nie"],["ohne"],["seife"],["wasch"]], muster:"Nie Ohne Seife Waschen" },
     { t:"open", pts:2, q:"Nenne die vier Nebenhimmelsrichtungen.", keys:[["nordost","=no"],["südost","suedost","=so"],["südwest","suedwest","=sw"],["nordwest","=nw"]], muster:"Nordosten, Südosten, Südwesten, Nordwesten" },
     { t:"open", pts:1, q:"In welcher Himmelsrichtung geht die Sonne unter?", keys:[["=westen","=w","=west"]], muster:"Im Westen." },
-    { t:"grid", pts:2, q:"Starte beim Kästchen mit dem ✖. Gehe 3 Kästchen nach Osten, dann 2 Kästchen nach Süden und dann 1 Kästchen nach Südwesten. Tippe das Kästchen an, auf dem du landest.", n:6, start:[1,1], target:[3,4] },
+    { t:"grid", pts:3, q:"Kästchen-Wanderung wie auf dem Arbeitsblatt: Starte beim Kästchen mit dem ★. Mache bei jedem Schritt ein Kreuz in das Kästchen, auf dem du landest. Oben ist Norden.", n:6, start:[1,1], steps:[["o",3],["s",2],["sw",1]] },
     { t:"open", pts:1, q:"In welcher Himmelsrichtung liegt Hamburg von Berlin aus?", keys:[["=nw","=nordwesten","=nordwest"]], muster:"Im Nordwesten (NW)." },
     { t:"open", pts:1, q:"In welcher Himmelsrichtung liegt Warschau von Berlin aus?", keys:[["=o","=osten","=ost"]], muster:"Im Osten (O)." },
     { t:"mc", pts:1, q:"Wohin zeigt die Nadel eines Kompasses?", opts:["Nach Osten","Nach Süden","Nach Norden","Nach Westen"], a:2 }
