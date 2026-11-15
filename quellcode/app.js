@@ -126,6 +126,7 @@ function mapClickLL(m, evt){
   const ll = m.proj.invert([p.x, p.y]);
   if(!ll || !isFinite(ll[0])) return null;
   const v = VIEWS[m.view]; if(v.globe && d3.geoDistance(ll, v.globe) > (v.clipDeg||90)*Math.PI/180) return null;
+  if(window.__T) window.__T.last = ll;
   return { ll, xy:[p.x,p.y] };
 }
 function whatIsAt(ll){
@@ -174,7 +175,7 @@ function renderHome(){
     g.appendChild(a);
   });
   const ex = examState(); const last = ex && ex.result;
-  const card = el("a", { class:"examcard", href:"#abschlusstest" }, `<div class="chemoji">🎓</div><div class="chtxt"><b>Großer Abschlusstest</b><span>Alle Kapitel · ${FINAL_EXAM.minutes} Minuten · mit Note</span>${last?`<div class="chmeta"><span class="exc">Letztes Ergebnis: ${esc(last.name)} – Note ${last.grade} (${last.points}/${last.max} Punkte)</span></div>`:(ex&&ex.start&&!ex.done?`<div class="chmeta"><span class="exc">⏳ Test läuft gerade</span></div>`:"")}</div>`);
+  const card = el("a", { class:"examcard", href:"#abschlusstest" }, `<div class="chemoji">🎓</div><div class="chtxt"><b>Großer Abschlusstest</b><span>${EXAM_TASKS.length} Aufgaben · ${FINAL_EXAM.minutes} Minuten · mit Note</span>${last?`<div class="chmeta"><span class="exc">Letztes Ergebnis: ${esc(last.name)} – Note ${last.grade} (${last.points}/${last.max} Punkte)</span></div>`:(ex&&ex.start&&!ex.done?`<div class="chmeta"><span class="exc">⏳ Test läuft gerade</span></div>`:"")}</div>`);
   g.appendChild(card);
   $("#reset").onclick = () => { const b = $("#reset"); if(b.dataset.sure){ P = {}; save(); renderHome(); } else { b.dataset.sure = "1"; b.textContent = "Wirklich alles löschen? Nochmal tippen."; } };
 }
@@ -617,11 +618,13 @@ function renderTest(ch, c){
 }
 
 // ================= GROSSER ABSCHLUSSTEST =================
-const EXAM_KEY = "gewi5-abschlusstest-v1";
+const EXAM_KEY = "gewi5-abschlusstest-v2";
 var examTimer = null;
 const EXAM_TASKS = [];
 FINAL_EXAM.sections.forEach((sec, si) => sec.tasks.forEach((t, ti) => EXAM_TASKS.push(Object.assign({ sec: si, id: "s"+si+"t"+ti }, t))));
 const EXAM_MAX = EXAM_TASKS.reduce((s,t)=>s+t.pts, 0);
+function newOrder(){ const o = []; FINAL_EXAM.sections.forEach((sec, si) => { const idx = EXAM_TASKS.map((t,k)=>k).filter(k => EXAM_TASKS[k].sec === si); shuffle(idx).forEach(k => o.push(k)); }); return o; }
+function seq(S){ return (S.order && S.order.length === EXAM_TASKS.length ? S.order : EXAM_TASKS.map((t,k)=>k)).map(k => EXAM_TASKS[k]); }
 
 function examState(){ try { return JSON.parse(localStorage.getItem(EXAM_KEY) || "null"); } catch(e) { return window.__examMem || null; } }
 function examSave(S){ window.__examMem = S; try { localStorage.setItem(EXAM_KEY, JSON.stringify(S)); } catch(e) {} }
@@ -696,10 +699,10 @@ function renderExam(){
 function renderExamIntro(){
   app.innerHTML = `
   <div class="chhead exam-head" style="--c:#25232b"><a class="back" href="#">← Übersicht</a>
-    <div class="chtitle"><span class="chemoji">🎓</span><div><small>Alle Kapitel</small><h1>Großer Abschlusstest</h1></div></div></div>
+    <div class="chtitle"><span class="chemoji">🎓</span><div><small>Klassenarbeit</small><h1>Großer Abschlusstest</h1></div></div></div>
   <main class="content" style="--c:#2f7fb8">
     <div class="examintro">
-      <p>In diesem Test zeigst du, was du in allen acht Kapiteln gelernt hast. Er funktioniert wie eine richtige Klassenarbeit.</p>
+      <p>In diesem Test zeigst du, was du gelernt hast. Er funktioniert wie eine richtige Klassenarbeit. Themen: ${FINAL_EXAM.sections.map(s=>s.title).join(", ")}.</p>
       <ul class="rules">
         <li>⏱️ Du hast <b>${FINAL_EXAM.minutes} Minuten</b> Zeit. Danach wird der Test automatisch abgegeben.</li>
         <li>📝 <b>${EXAM_TASKS.length} Aufgaben</b> mit insgesamt <b>${EXAM_MAX} Punkten</b> – viele davon beantwortest du mit eigenen Worten.</li>
@@ -716,7 +719,7 @@ function renderExamIntro(){
   $("#exStart").onclick = () => {
     const name = $("#exName").value.trim();
     if(name.length < 2){ $("#nameErr").classList.remove("hidden"); $("#exName").focus(); return; }
-    const S = { name, start: Date.now(), answers:{}, cur:0, done:false };
+    const S = { name, start: Date.now(), answers:{}, cur:0, done:false, order: newOrder() };
     examSave(S); renderExamRun(S);
   };
 }
@@ -741,7 +744,7 @@ function renderExamRun(S){
 }
 function renderExamNav(S, cur){
   const nav = $("#exNav"); nav.innerHTML = "";
-  EXAM_TASKS.forEach((t, i) => {
+  seq(S).forEach((t, i) => {
     const b = el("button", { class:"exdot" + (S.answers[t.id] ? " done" : "") + (i===cur ? " cur" : ""), "aria-label":"Aufgabe "+(i+1) }, String(i+1));
     b.onclick = () => showExamTask(S, i);
     nav.appendChild(b);
@@ -754,7 +757,7 @@ function renderExamNav(S, cur){
 function showExamTask(S, i){
   S.cur = i; examSave(S);
   renderExamNav(S, i);
-  const t = EXAM_TASKS[i], sec = FINAL_EXAM.sections[t.sec];
+  const T = seq(S); const t = T[i], sec = FINAL_EXAM.sections[t.sec];
   const main = $("#exMain"); main.innerHTML = "";
   window.scrollTo(0,0);
   const locked = !!S.answers[t.id];
@@ -774,8 +777,8 @@ function showExamTask(S, i){
       const v = w.value();
       if(v == null){ msg.className = "fb bad"; msg.textContent = w.emptyMsg || "Du hast noch nichts beantwortet."; return; }
       S.answers[t.id] = { v, at: Date.now() }; examSave(S);
-      const nextOpen = EXAM_TASKS.findIndex((x, k) => k > i && !S.answers[x.id]);
-      const anyOpen = EXAM_TASKS.findIndex(x => !S.answers[x.id]);
+      const nextOpen = T.findIndex((x, k) => k > i && !S.answers[x.id]);
+      const anyOpen = T.findIndex(x => !S.answers[x.id]);
       if(nextOpen >= 0) showExamTask(S, nextOpen); else if(anyOpen >= 0) showExamTask(S, anyOpen); else showSubmit(S);
     };
     row.appendChild(conf);
@@ -795,7 +798,7 @@ function showSubmit(S){
     <p>${open === 0 ? "Du hast alle Aufgaben beantwortet. 👍" : `Noch <b>${open}</b> Aufgabe${open===1?" ist":"n sind"} nicht bestätigt. Diese zählen dann <b>0 Punkte</b>.`}</p>
     <p>Nach dem Abgeben kannst du nichts mehr ändern.</p></div>`;
   const row = el("div", { class:"row" });
-  if(open){ const back = el("button", { class:"btn ghost" }, "Zurück zu offenen Aufgaben"); back.onclick = () => showExamTask(S, EXAM_TASKS.findIndex(t => !S.answers[t.id])); row.appendChild(back); }
+  if(open){ const back = el("button", { class:"btn ghost" }, "Zurück zu offenen Aufgaben"); back.onclick = () => showExamTask(S, seq(S).findIndex(t => !S.answers[t.id])); row.appendChild(back); }
   const sub = el("button", { class:"btn" }, "Endgültig abgeben"); sub.onclick = () => finishExam(S, false);
   row.appendChild(sub); main.querySelector(".extask").appendChild(row);
 }
@@ -845,7 +848,7 @@ function renderExamResult(S){
   const drawReview = () => {
     const adj = $("#adjOn").checked;
     rev.innerHTML = "";
-    EXAM_TASKS.forEach((t, i) => {
+    seq(S).forEach((t, i) => {
       const base = S.scores[t.id] || 0, delta = (S.adjust||{})[t.id] || 0, got = Math.max(0, Math.min(t.pts, base + delta));
       const cls = got === t.pts ? "ok" : got > 0 ? "part" : "bad";
       const it = el("div", { class:"revitem " + cls }, `<div class="revh"><span>Aufgabe ${i+1}</span><b>${got} / ${t.pts} P.</b></div>
@@ -962,5 +965,6 @@ function examWidget(t, val, locked){
   return { node, value: () => null };
 }
 
+if(/[?&]selftest/.test(location.search)) window.__T = { whatIsAt };
 route();
 })();
