@@ -808,6 +808,7 @@ function finishExam(S, timeout){
   renderExamResult(S);
 }
 function examResult(S){
+  if(S.done){ S.scores = {}; EXAM_TASKS.forEach(t => { S.scores[t.id] = S.answers[t.id] ? scoreTask(t, S.answers[t.id].v) : 0; }); }
   const pts = EXAM_TASKS.reduce((s, t) => s + Math.max(0, Math.min(t.pts, (S.scores[t.id]||0) + ((S.adjust||{})[t.id]||0))), 0);
   const g = gradeFor(pts, EXAM_MAX);
   S.result = { name:S.name, points:pts, max:EXAM_MAX, grade:g.grade, word:g.word, pct:Math.round(g.pct) };

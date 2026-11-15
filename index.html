@@ -373,7 +373,7 @@ const CHAPTERS = [
   ],
   test: [
     { t:"open", q:"Schreibe das Wort aus: Gewi = …", keys:[["gesellschaftswissenschaft"]], muster:"Gesellschaftswissenschaften" },
-    { t:"open", q:"Was lernt man im Fach Gewi? Antworte in einem Satz.", keys:[["zusammen","miteinander","gesellschaft"]], muster:"Wie Menschen zusammenleben – heute, früher und an verschiedenen Orten." },
+    { t:"open", q:"Was lernt man im Fach Gewi? Antworte in einem Satz.", keys:[["zusammen","miteinander","gesellschaft","geschicht","geograf","geograph","politi","früher","vergangen","welt","erde","menschen"]], muster:"Wie Menschen zusammenleben – heute, früher und an verschiedenen Orten." },
     { t:"open", q:"Was bedeutet das Wort „Wissenschaft“?", keys:[["forsch","untersuch","genau","wissen","prüf","erklär"]], muster:"Etwas ganz genau erforschen und erklären." },
     { t:"open", q:"Welcher Bereich von Gewi gehört zu „Orientierung im Raum“?", keys:[["geograf","geograph","erdkunde"]], muster:"Die Geografie." },
     { t:"mc", q:"Welche Frage gehört zu „Orientierung in der Gesellschaft“?", opts:["Wo liegt Afrika?","Wie lebten die Neandertaler?","Welche Regeln gelten in unserer Klasse?","Wie alt ist die Erde?"], a:2 },
@@ -414,7 +414,7 @@ const CHAPTERS = [
       cats:[["ja","✅ stimmt"],["nein","❌ stimmt nicht"]],
       items:[["In Gruppen gelten Regeln.","ja"],["In Gruppen kann jeder tun, was ihm gefällt.","nein"],["In Gruppen muss man Rücksicht nehmen.","ja"],["In Gruppen gibt es keinen Streit.","nein"],["In Gruppen hat man keine Pflichten.","nein"],["In Gruppen wird erwartet, dass man sich an Regeln hält.","ja"],["In Gruppen sind alle Freunde.","nein"],["In Gruppen gibt es Aufgaben, die man erfüllen muss.","ja"],["In Gruppen erlebt man Gemeinschaft.","ja"],["In Gruppen muss man keine Konsequenzen fürchten.","nein"]] },
     { type:"quiz", id:"b3", title:"Konsequenzen in Gruppen", questions:[
-      { t:"open", q:"Fall A: Jan schwänzt sein Fußballtraining. Welche Konsequenz könnte das haben?", keys:[["enttäusch","aufgestellt","bank","nicht spielen","ärger","trainer","strafe","sauer","wütend","nicht mitspielen","rausgeworfen","raus"]], muster:"Er enttäuscht sein Team und wird beim nächsten Spiel vielleicht nicht aufgestellt." },
+      { t:"open", q:"Fall A: Jan schwänzt sein Fußballtraining. Welche Konsequenz könnte das haben?", keys:[["enttäusch","aufgestellt","bank","ärger","trainer","strafe","sauer","wütend","raus","spiel","teilnehm","mitmach","ausgeschlossen","ausschluss","verwarn","ermahn","schimpf","zuschau","ausgewechselt","ersatz","verpass","nachsitz","extra","zusatz","entschuldig","rauswurf","rausgeworfen","rausfliegen","fliegt"]], muster:"Er enttäuscht sein Team und wird beim nächsten Spiel vielleicht nicht aufgestellt." },
       { t:"open", q:"Fall B: Celine gibt die ausgeliehene CD zu spät in der Stadtbibliothek ab. Was passiert?", keys:[["gebühr","bezahl","strafe","geld","zahlen","mahn"]], muster:"Sie muss eine Gebühr (Strafe) bezahlen." },
       { t:"open", q:"Fall C: Steffen kommt zur Theater-AG-Probe und hat nicht geübt. Welche Konsequenz könnte das haben?", keys:[["nicht mitspiel","nicht mitmach","rolle","auffühlung","aufführung","ärger","üben","enttäusch","ersetzt","sauer"]], muster:"Er darf bei der Aufführung vielleicht nicht mitmachen oder verliert seine Rolle." },
       { t:"open", q:"Nenne eine Erwartung, die deine Lehrerinnen und Lehrer an dich haben.", keys:[["respekt","ruhig","zuhör","mitmach","mitarbeit","pünktlich","hausaufgab","aufpass","melden","freundlich","höflich","lern","leise","regeln"]], muster:"Zum Beispiel: dass ich sie respektiere, zuhöre, mitmache und pünktlich bin." },
@@ -688,7 +688,7 @@ const CHAPTERS = [
     { type:"order", id:"e2", title:"Zeitstrahl ordnen", prompt:"Tippe die Ereignisse vom ältesten zum jüngsten an.",
       items:["Die Erde entsteht","Erste Einzeller","Erste Fische","Riesige Steinkohlewälder","Dinosaurier","Die Dinosaurier sterben aus","Mammuts in der Eiszeit","Erste Menschen"] },
     { type:"quiz", id:"e3", title:"Fragen zur Erdgeschichte", questions:[
-      { t:"open", q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","4 komma 6","milliard"]], muster:"Rund 4,6 Milliarden Jahre." },
+      { t:"open", q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","4 komma 6","milliard","mrd","4600"]], muster:"Rund 4,6 Milliarden Jahre." },
       { t:"open", q:"Welche Lebewesen gab es zuerst auf der Erde, und wo lebten sie?", keys:[["einzeller","bakterie","alge"],["wasser","meer","ozean"]], muster:"Einzeller im Wasser (in den Urmeeren)." },
       { t:"open", q:"Wodurch entstand der Sauerstoff in der Luft?", keys:[["fotosynth","photosynth","pflanze","alge","einzeller"]], muster:"Durch Fotosynthese von einfachen Lebewesen (z. B. Blaualgen)." },
       { t:"open", q:"Warum sind die Dinosaurier ausgestorben?", keys:[["asteroid","meteor","komet","einschlag","stein aus dem all"]], muster:"Vor 66 Millionen Jahren schlug ein riesiger Asteroid ein." },
@@ -706,7 +706,7 @@ const CHAPTERS = [
   ],
   test: [
     { t:"open", q:"Nenne die vier Zeitalter der Erdgeschichte in der richtigen Reihenfolge.", keys:[["frühzeit","fruehzeit"],["altertum"],["mittelalter"],["neuzeit"]], muster:"Erdfrühzeit, Erdaltertum, Erdmittelalter, Erdneuzeit.", ordered:true },
-    { t:"open", q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","milliard"]], muster:"Rund 4,6 Milliarden Jahre." },
+    { t:"open", q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","milliard","mrd","4600"]], muster:"Rund 4,6 Milliarden Jahre." },
     { t:"open", q:"Was entstand durch die Fotosynthese der ersten Lebewesen?", keys:[["sauerstoff"]], muster:"Sauerstoff." },
     { t:"open", q:"Was ist aus den riesigen Wäldern des Erdaltertums geworden?", keys:[["kohle"]], muster:"Steinkohle." },
     { t:"mc", q:"Wann starben die Dinosaurier aus?", opts:["Vor 66 Millionen Jahren","Vor 6600 Jahren","Vor 4,6 Milliarden Jahren","Vor 100 Jahren"], a:0 },
@@ -808,15 +808,15 @@ const FINAL_EXAM = {
   sections: [
   { title:"Gewi und seine Bereiche", emoji:"🧩", tasks:[
     { t:"open", pts:1, q:"Schreibe die Abkürzung „Gewi“ aus.", keys:[["gesellschaftswissenschaft"]], muster:"Gesellschaftswissenschaften" },
-    { t:"open", pts:1, q:"Was lernt man im Fach Gewi? Antworte in einem Satz.", keys:[["zusammen","miteinander","gesellschaft"]], muster:"Wie Menschen zusammenleben – heute, früher und an verschiedenen Orten der Erde." },
+    { t:"open", pts:1, q:"Was lernt man im Fach Gewi? Antworte in einem Satz.", keys:[["zusammen","miteinander","gesellschaft","geschicht","geograf","geograph","politi","früher","vergangen","welt","erde","menschen"]], muster:"Wie Menschen zusammenleben – heute, früher und an verschiedenen Orten der Erde." },
     { t:"open", pts:3, q:"Nenne die drei Bereiche von Gewi.", keys:[["geschicht"],["geograf","geograph","erdkunde"],["politi"]], muster:"Geschichte, Geografie, Politik (Politische Bildung)" },
     { t:"sort", pts:3, q:"Ordne jedes Thema dem richtigen Bereich zu.", cats:[["ges","Geschichte"],["geo","Geografie"],["pol","Politik"]],
       items:[["Neandertaler","ges"],["Weltmeere","geo"],["Klassensprecherwahl","pol"],["Alte Münzen","ges"],["Himmelsrichtungen","geo"],["Regeln im Verein","pol"]] },
     { t:"mc", pts:1, q:"Welche Aussage über Gruppen stimmt?", opts:["In Gruppen kann jeder tun, was er will.","In Gruppen gelten Regeln.","In Gruppen gibt es nie Streit.","In Gruppen hat man keine Pflichten."], a:1 },
-    { t:"open", pts:1, q:"Max kommt immer zu spät zum Fußballtraining. Nenne eine mögliche Konsequenz.", keys:[["enttäusch","aufgestellt","bank","nicht spielen","ärger","trainer","strafe","sauer","wütend","nicht mitspielen","raus","runden","laufen"]], muster:"Er enttäuscht sein Team und wird zum Beispiel nicht aufgestellt." }
+    { t:"open", pts:1, q:"Max kommt immer zu spät zum Fußballtraining. Nenne eine mögliche Konsequenz.", keys:[["enttäusch","aufgestellt","bank","ärger","trainer","strafe","sauer","wütend","raus","runden","laufen","spiel","teilnehm","mitmach","ausgeschlossen","ausschluss","verwarn","ermahn","schimpf","zuschau","ausgewechselt","ersatz","verpass","nachsitz","extra","zusatz","entschuldig","rauswurf","rausgeworfen","rausfliegen","fliegt"]], muster:"Er enttäuscht sein Team und wird zum Beispiel nicht aufgestellt." }
   ]},
   { title:"Quellen", emoji:"🏺", tasks:[
-    { t:"open", pts:1, q:"Was ist eine geschichtliche Quelle?", keys:[["vergangen","früher","alt","geschichte"]], muster:"Alles, was aus der Vergangenheit übrig geblieben ist und uns etwas über sie verrät." },
+    { t:"open", pts:1, q:"Was ist eine geschichtliche Quelle?", keys:[["vergangen","früher","alt","geschichte","informat","herausfind","erfahr","beweis","übrig"]], muster:"Alles, was aus der Vergangenheit übrig geblieben ist und uns etwas über sie verrät." },
     { t:"open", pts:3, q:"Nenne die drei Arten von geschichtlichen Quellen.", keys:[["überrest","ueberrest"],["bild","ton"],["schrift"]], muster:"Überreste, Bild- und Tonquellen, Schriftquellen" },
     { t:"sort", pts:3, q:"Ordne jede Quelle der richtigen Quellenart zu.", cats:[["ue","Überreste"],["bt","Bild- und Tonquellen"],["sc","Schriftquellen"]],
       items:[["Faustkeil","ue"],["Schallplatte","bt"],["Brief","sc"],["Münze","ue"],["Fotografie","bt"],["Zeitung","sc"]] },
@@ -851,7 +851,7 @@ const FINAL_EXAM = {
     { t:"order", pts:2, q:"Bringe die Zeitalter der Erdgeschichte in die richtige Reihenfolge (vom ältesten zum jüngsten).", items:["Erdfrühzeit","Erdaltertum","Erdmittelalter","Erdneuzeit"] },
     { t:"sort", pts:4, q:"Ordne jedes Ereignis dem richtigen Zeitalter zu.", cats:[["e1","Erdfrühzeit"],["e2","Erdaltertum"],["e3","Erdmittelalter"],["e4","Erdneuzeit"]],
       items:[["Erste Einzeller","e1"],["Sauerstoff durch Fotosynthese","e1"],["Erste Fische","e2"],["Steinkohlewälder","e2"],["Dinosaurier","e3"],["Asteroideneinschlag","e3"],["Mammuts","e4"],["Erste Menschen","e4"]] },
-    { t:"open", pts:1, q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","milliard"]], muster:"Rund 4,6 Milliarden Jahre" },
+    { t:"open", pts:1, q:"Wie alt ist die Erde ungefähr?", keys:[["4,6","4.6","viereinhalb","milliard","mrd","4600"]], muster:"Rund 4,6 Milliarden Jahre" },
     { t:"open", pts:1, q:"Warum sind die Dinosaurier ausgestorben?", keys:[["asteroid","meteor","komet","einschlag"]], muster:"Vor 66 Millionen Jahren schlug ein riesiger Asteroid ein." }
   ]},
   { title:"Entwicklung des Menschen", emoji:"🦴", tasks:[
@@ -1675,6 +1675,7 @@ function finishExam(S, timeout){
   renderExamResult(S);
 }
 function examResult(S){
+  if(S.done){ S.scores = {}; EXAM_TASKS.forEach(t => { S.scores[t.id] = S.answers[t.id] ? scoreTask(t, S.answers[t.id].v) : 0; }); }
   const pts = EXAM_TASKS.reduce((s, t) => s + Math.max(0, Math.min(t.pts, (S.scores[t.id]||0) + ((S.adjust||{})[t.id]||0))), 0);
   const g = gradeFor(pts, EXAM_MAX);
   S.result = { name:S.name, points:pts, max:EXAM_MAX, grade:g.grade, word:g.word, pct:Math.round(g.pct) };
